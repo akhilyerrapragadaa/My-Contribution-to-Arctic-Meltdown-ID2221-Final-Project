@@ -1,4 +1,4 @@
-package spark
+package services
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{Dataset, SparkSession}
@@ -7,7 +7,7 @@ import com.datastax.spark.connector._
 import com.datastax.driver.core.{Session, Cluster, Host, Metadata}
 import org.apache.spark.sql.functions._
 
-object SparkTest {
+object DataProcessing {
 
   def MethaneEmissions : Int = {
 

@@ -6,7 +6,7 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits._
 
 // Spark
-import spark.SparkTest
+import services.DataProcessing
 
 class HomeController @Inject()(cc: ControllerComponents) extends AbstractController(cc) {
 
@@ -16,32 +16,26 @@ class HomeController @Inject()(cc: ControllerComponents) extends AbstractControl
 
   //  Methane Emissions end point
   def Methane = Action { implicit request =>
-  	val sum = SparkTest.MethaneEmissions
+  	val sum = DataProcessing.MethaneEmissions
     Ok(views.html.test_args(s"A call to Spark, with result: $sum"))
   }
 
   // NO Emissions end point
   def NOEmissions = Action { implicit request =>
-  	val sum = SparkTest.NOEmissions
+  	val sum = DataProcessing.NOEmissions
     Ok(views.html.test_args(s"A call to Spark, with result: $sum"))
   }
 
   // PolarIce end point
   def PolarIce = Action { implicit request =>
-  	val sum = SparkTest.PolarIce
+  	val sum = DataProcessing.PolarIce
     Ok(views.html.test_args(s"A call to Spark, with result: $sum"))
   }
 
   // Temperature end point
   def Temperature = Action { implicit request =>
-  	val sum = SparkTest.Temperature
+  	val sum = DataProcessing.Temperature
     Ok(views.html.test_args(s"A call to Spark, with result: $sum"))
-  }
-
-  // A non-blocking call to Apache Spark 
-  def testAsync = Action.async{
-  	val futureSum = Future{SparkTest.MethaneEmissions}
-    futureSum.map{ s => Ok(views.html.test_args(s"A non-blocking call to Spark with result: ${s + 1000}"))}
   }
 
 }
