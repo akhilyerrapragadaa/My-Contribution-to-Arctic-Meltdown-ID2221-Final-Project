@@ -14,6 +14,12 @@ class HomeController @Inject()(cc: ControllerComponents) extends AbstractControl
     Ok(views.html.index())
   }
 
+    //  Methane Emissions end point
+  def CO2Emissions = Action { implicit request =>
+  	val sum = DataProcessing.CO2Emissions
+    Ok(views.html.test_args(s"A call to Spark, with result: $sum"))
+  }
+
   //  Methane Emissions end point
   def Methane = Action { implicit request =>
   	val sum = DataProcessing.MethaneEmissions

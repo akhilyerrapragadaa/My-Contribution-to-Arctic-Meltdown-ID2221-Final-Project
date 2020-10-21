@@ -1,6 +1,6 @@
 GET        /                       controllers.HomeController.index
 
-# Spark call test
+GET        /CO2Emissions                   controllers.HomeController.CO2Emissions
 GET        /Methane                   controllers.HomeController.Methane
 GET        /NOEmissions                  controllers.HomeController.NOEmissions
 GET        /PolarIce                  controllers.HomeController.PolarIce
