@@ -11,7 +11,7 @@ import services.DataProcessing
 class HomeController @Inject()(cc: ControllerComponents) extends AbstractController(cc) {
 
   def index = Action { implicit request =>
-    Ok(views.html.index())
+  Ok(views.html.index())
   }
 
     //  Methane Emissions end point

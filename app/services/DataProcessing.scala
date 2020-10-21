@@ -6,7 +6,14 @@ import org.apache.spark.SparkContext._
 import org.apache.spark.sql.cassandra._
 import com.datastax.spark.connector._
 import org.apache.spark.sql.functions._
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.linalg.Vectors;
+import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.regression.{LinearRegression, LinearRegressionModel}
 import com.datastax.driver.core.{Session, Cluster, Host, Metadata}
+import com.cloudera.sparkts.models.ARIMA;
+import com.cloudera.sparkts.models.ARIMAModel;
 
 object DataProcessing {
 
@@ -16,11 +23,11 @@ object DataProcessing {
     val sparkS = SparkSession.builder.master("local[2]").getOrCreate
     import sparkS.implicits._
 
-     val cluster = Cluster.builder().addContactPoint("127.0.0.1").build()
-     val session = cluster.connect()
+    // val cluster = Cluster.builder().addContactPoint("127.0.0.1").build()
+   //  val session = cluster.connect()
 
-     session.execute("CREATE KEYSPACE IF NOT EXISTS environmental_calculations WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };")
-     session.execute("CREATE TABLE IF NOT EXISTS environmental_calculations.co2 (year int PRIMARY KEY, tonnes float);")
+   //  session.execute("CREATE KEYSPACE IF NOT EXISTS environmental_calculations WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };")
+   //  session.execute("CREATE TABLE IF NOT EXISTS environmental_calculations.co2 (year int PRIMARY KEY, tonnes float);")
 
     // Create a DataFrame based on the JSON results.
     val fileName = "/home/nanda/allData/co2-api.json"
@@ -47,9 +54,24 @@ object DataProcessing {
 
     var inacc = otherr.map(x =>( x._1, x._2 / 27.2 ))
 
-     inacc.saveToCassandra("environmental_calculations", "co2", SomeColumns("year", "tonnes"))
+  //   inacc.saveToCassandra("environmental_calculations", "co2", SomeColumns("year", "tonnes"))
 
     inacc.take(50).foreach(println)
+
+ val ts = Vectors.dense(inacc.map(_._2.toDouble).collect.toArray)
+    /**
+      * ARIMA
+      */
+    val arimaModel = ARIMA.fitModel(1, 0, 1, ts)
+    val arimaModel1 = ARIMA.autoFit(ts)
+    println("coefficients: " + arimaModel.coefficients.mkString(","))
+
+    val forecast = arimaModel.forecast(ts, 10)
+    val forecast1 = arimaModel1.forecast(ts,10)
+    println("forecast of next 20 observations: " + forecast.toArray.mkString(","))
+    println("forecast of next 20 observations: " + forecast1.toArray.mkString(","))
+
+
 
     val sum = Seq(3, 2, 4, 1, 0, 30,30,40,50,-4).toDS
     sum.count.toInt
