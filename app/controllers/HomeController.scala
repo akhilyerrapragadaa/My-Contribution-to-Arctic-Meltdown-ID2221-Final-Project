@@ -14,20 +14,7 @@ import services.DataProcessing
 class HomeController @Inject()(cc: ControllerComponents) extends AbstractController(cc) {
 
   def index = Action { implicit request =>
-
-  val plot = Vegas("Country Pop").
-  withData(
-    Seq(
-      Map("country" -> "USA", "population" -> 314),
-      Map("country" -> "UK", "population" -> 64),
-      Map("country" -> "DK", "population" -> 80)
-    )
-  ).
-  encodeX("country", Nom).
-  encodeY("population", Quant).
-  mark(Bar)
-
-  Ok(plot.toJson)
+  Ok(views.html.index())
   }
 
     //  Methane Emissions end point
