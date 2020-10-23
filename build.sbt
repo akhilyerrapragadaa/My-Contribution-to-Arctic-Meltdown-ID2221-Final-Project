@@ -8,6 +8,7 @@ libraryDependencies ++= Seq(
   , "org.apache.spark" %% "spark-core" % "2.2.0"
   , "org.apache.spark" %% "spark-sql" % "2.2.0"
   , "org.apache.spark" %% "spark-mllib" % "2.2.0"
+  ,  "org.vegas-viz" %% "vegas-spark" % "0.3.11"
   , "org.apache.hadoop" % "hadoop-client" % "2.7.2"
   , "com.cloudera.sparkts" % "sparkts" % "0.4.0"
   , ("com.datastax.spark" %% "spark-cassandra-connector" % "2.0.2").exclude("io.netty", "netty-handler")
