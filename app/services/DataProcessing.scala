@@ -92,7 +92,11 @@ object DataProcessing {
 
     dffplot.printSchema();
 
-    val plot = Vegas("Country Pop").withDataFrame(dffplot)
+     val plot = Vegas("Co2 Emissions").withDataFrame(dffplot).
+     mark(Line).
+     encodeX("id", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
+     encodeY("vals", Quant, axis=Axis(title="Co2 Emission in Tons Per Person, Per Year")).
+     configCell(width=600, height=400)
 
     combin.take(50).foreach(println)
 
@@ -101,7 +105,7 @@ object DataProcessing {
     combin.take(50).foreach(println)
 
     println("Forecast of next 20 observations: " + forecast1.toArray.mkString(","))
- 
+
     return plot.toJson
   }
 
@@ -171,13 +175,23 @@ object DataProcessing {
 
     val combin = smallRDD.zip(befcombin)
 
+    val dffplot = sparkS.createDataFrame(combin).toDF("id", "vals")
+
+    dffplot.printSchema();
+
+     val plot = Vegas("Methane Emissions").withDataFrame(dffplot).
+     mark(Line).
+     encodeX("id", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
+     encodeY("vals", Quant, axis=Axis(title="Methane Emission in Tons Per Person, Per Year")).
+     configCell(width=600, height=400)
+
     combin.take(50).foreach(println)
 
     combin.saveToCassandra("environmental_calculations", "predictioncalculations", SomeColumns("year", "methanepredicted") )
 
     println("Forecast of next 20 observations: " + forecast1.toArray.mkString(","))
  
-    return "Methane - Actual and Prediction calculations Completed and Pushed to Cassandra!"
+    return plot.toJson
 
   }
 
@@ -245,13 +259,23 @@ object DataProcessing {
 
     val combin = smallRDD.zip(befcombin)
 
+    val dffplot = sparkS.createDataFrame(combin).toDF("id", "vals")
+
+    dffplot.printSchema();
+
+     val plot = Vegas("NO Emissions").withDataFrame(dffplot).
+     mark(Line).
+     encodeX("id", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
+     encodeY("vals", Quant, axis=Axis(title="NO Emission in Tons Per Person, Per Year")).
+     configCell(width=600, height=400)
+
     combin.take(50).foreach(println)
 
     combin.saveToCassandra("environmental_calculations", "predictioncalculations", SomeColumns("year", "nopredicted") )
 
     println("Forecast of next 20 observations: " + forecast1.toArray.mkString(","))
  
-    return "Nitrous Oxide - Actual and Prediction calculations Completed and Pushed to Cassandra!"
+    return plot.toJson
 
   }
 
@@ -276,9 +300,19 @@ object DataProcessing {
 
     bat.printSchema();
 
-    val sam = bat.rdd.map(x => (x(2) ,x(0) ))
+    val sam = bat.rdd.map(x => (x(2).toString.toInt ,x(0).toString.toDouble ))
 
      sam.take(50).foreach(println)
+
+    val dffplot = sparkS.createDataFrame(sam).toDF("year", "area")
+
+    dffplot.printSchema();
+
+     val plot = Vegas("Area Remaining").withDataFrame(dffplot).
+     mark(Line).
+     encodeX("year", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
+     encodeY("area", Quant, axis=Axis(title="Area Remaining in Million Sqkm")).
+     configCell(width=600, height=400)
 
     val sam2 = bat.rdd.map(x => (x(2) ,x(1) ))
 
@@ -288,7 +322,7 @@ object DataProcessing {
 
     sam2.saveToCassandra("environmental_calculations", "polaricevalues", SomeColumns("year", "extent" ))
 
-     return "PolarIce - Actual calculations Completed and Pushed to Cassandra!"
+     return plot.toJson
 
   }
 
@@ -318,12 +352,22 @@ object DataProcessing {
      val dar = sam.reduceByKey(_+_)
 
      var agg = dar.map(x => (x._1, x._2/12)).sortBy(_._1)
-    
+
+     val dffplot = sparkS.createDataFrame(agg).toDF("year", "area")
+
+     dffplot.printSchema();
+
+     val plot = Vegas("Area Remaining").withDataFrame(dffplot).
+     mark(Line).
+     encodeX("year", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
+     encodeY("area", Quant, axis=Axis(title="Arctic Summer Temperatures")).
+     configCell(width=600, height=400)
+
     agg.saveToCassandra("environmental_calculations", "temperaturechanges", SomeColumns("year", "temperature"))
 
     agg.take(150).foreach(println)
 
-     return "Tempterature - Actual calculations Completed and Pushed to Cassandra!"
+     return plot.toJson
 
   }
 
