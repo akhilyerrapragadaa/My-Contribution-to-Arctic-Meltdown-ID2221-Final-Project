@@ -33,7 +33,7 @@ object DataProcessing {
      session.execute("CREATE TABLE IF NOT EXISTS environmental_calculations.co2 (year int PRIMARY KEY, tonnes float);")
 
     // Create a DataFrame based on the JSON results.
-    val fileName = "/home/nanda/allData/co2-api.json"
+    val fileName = "./assets/co2-api.json"
     val dataframe = sparkS.read.json(fileName)
 
     val explodedDataframe = dataframe.select(explode($"co2").alias("co2_data"))
@@ -133,7 +133,7 @@ object DataProcessing {
      session.execute("CREATE TABLE IF NOT EXISTS environmental_calculations.methane (year int PRIMARY KEY, tonnes float);")
 
     // Create a DataFrame based on the JSON results.
-    val fileName = "/home/nanda/allData/methane.json"
+    val fileName = "./assets/methane.json"
     val df = sparkS.read.json(fileName)
 
     val content = df.select(explode($"methane").alias("methane_data"))
@@ -230,7 +230,7 @@ object DataProcessing {
      session.execute("CREATE TABLE IF NOT EXISTS environmental_calculations.noemissions (year int PRIMARY KEY, tonnes float);")
 
     // Create a DataFrame based on the JSON results.
-    val fileName = "/home/nanda/allData/NO.json"
+    val fileName = "./assets/NO.json"
     val df = sparkS.read.json(fileName)  
 
     val content = df.select(explode($"nitrous").alias("nitrous_oxide_data"))
@@ -325,7 +325,7 @@ object DataProcessing {
      session.execute("CREATE TABLE IF NOT EXISTS environmental_calculations.polaricevalues (year int PRIMARY KEY, area float, extent float);")
 
     // Create a DataFrame based on the JSON results.
-    val fileName = "/home/nanda/allData/PolarIce.json"
+    val fileName = "./assets/PolarIce.json"
     val df = sparkS.read.json(fileName)  
 
     val content = df.select(explode($"result").alias("polarice_data"))
@@ -372,7 +372,7 @@ object DataProcessing {
      session.execute("CREATE TABLE IF NOT EXISTS environmental_calculations.temperaturechanges (year int PRIMARY KEY, temperature float);")
 
     // Create a DataFrame based on the JSON results.
-    val fileName = "/home/nanda/allData/Temperature.json"
+    val fileName = "./assets/Temperature.json"
     val df = sparkS.read.json(fileName)  
 
     val content = df.select(explode($"result").alias("temperature_data"))
