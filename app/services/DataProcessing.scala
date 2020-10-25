@@ -16,12 +16,10 @@ import vegas._
 import vegas.render.WindowRenderer._
 import vegas.sparkExt._
 
-
 import com.cloudera.sparkts.models.ARIMA;
 import com.cloudera.sparkts.models.ARIMAModel;
 
 object DataProcessing {
-
 
    def CO2Emissions : String = {
 
@@ -36,51 +34,64 @@ object DataProcessing {
 
     // Create a DataFrame based on the JSON results.
     val fileName = "/home/nanda/allData/co2-api.json"
-    val df = sparkS.read.json(fileName)
+    val dataframe = sparkS.read.json(fileName)
 
-    val content = df.select(explode($"co2").alias("co2_data"))
+    val explodedDataframe = dataframe.select(explode($"co2").alias("co2_data"))
 
-    val bat = content.select("co2_data.*")
+    val selectedDataFrame = explodedDataframe.select("co2_data.*")
 
-    bat.printSchema()
+    selectedDataFrame.printSchema()
 
-     val sam = bat.rdd.map(x => ( x(4).toString.toInt ,x(0).toString.toDouble ))
+     val inputRDD = selectedDataFrame.rdd.map(x => ( x(4).toString.toInt ,x(0).toString.toDouble ))
     
-    val dar = sam.reduceByKey(_+_)
+    val reducedRDD = inputRDD.reduceByKey(_+_)
 
-    var agg = dar.map(x => (x._1, x._2/365)).sortBy(_._2)
+    var averagedRDD = reducedRDD.map(x => (x._1, x._2/365)).sortBy(_._2)
 
-    // Ppm to Metric tons per cubic Kmtr
-    var calculation = agg.map(x =>( x._1, x._2 * 1.233))
+    // Ppm to Kg per acre foot
+    var ppmTokgRDD = averagedRDD.map(x =>( x._1, x._2 * 1.233))
 
-    var oth = calculation.map(x =>( x._1, (x._2 * 1000000)/4047 ))
+    // Kg per acre to Kg per sqkm conversion
+    var acreTosqkmRDD = ppmTokgRDD.map(x =>( x._1, (x._2 * 1000000)/4047 ))
 
-    var otherr = oth.map(x =>( x._1, x._2 / 1000 ))
+    // Kg per sqkm to tons per sqkm
+    var kgToTonsRDD = acreTosqkmRDD.map(x =>( x._1, x._2 / 1000 ))
 
-    var inacc = otherr.map(x =>( x._1, x._2 / 27.2 ))
+    //Tons per sqkm / population per sqkm
+    var finalRDD = kgToTonsRDD.map(x =>( x._1, x._2 / 27.2 )).sortBy(_._2)
 
-    inacc.saveToCassandra("environmental_calculations", "co2", SomeColumns("year", "tonnes"))
+    finalRDD.saveToCassandra("environmental_calculations", "co2", SomeColumns("year", "tonnes"))
 
+     var modifiedRDD = finalRDD.filter(_._1 != 2020)
 
-   var modific = inacc.filter(_._1 != 2020)
+    val dffplot1 = sparkS.createDataFrame(modifiedRDD).toDF("id", "vals")
 
-    modific.take(50).foreach(println)
+    dffplot1.printSchema();
 
-    val deom = modific.map(_._2.toDouble).collect.toArray
+     val plot1 = Vegas("Co2 Emissions").withDataFrame(dffplot1).
+     mark(Line).
+     encodeX("id", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
+     encodeY("vals", Quant, axis = Axis(title="Co2 Emission in Tons Per Person, Per Year")).
+     configCell(width=700, height=500)
 
-    val ts = Vectors.dense(deom)
+  
+    modifiedRDD.take(50).foreach(println)
 
-    val arimaModel1 = ARIMA.autoFit(ts)
+    val onlyValuesRDD = modifiedRDD.map(_._2.toDouble).collect.toArray
 
-    println("Coefficients: " + arimaModel1.coefficients.mkString(","))
+    val dense = Vectors.dense(onlyValuesRDD)
 
-    val forecast1 = arimaModel1.forecast(ts,20)
+    val arimaModel = ARIMA.autoFit(dense)
+
+    println("Coefficients: " + arimaModel.coefficients.mkString(","))
+
+    val forecast = arimaModel.forecast(dense,20)
 
     session.execute("CREATE TABLE IF NOT EXISTS environmental_calculations.predictioncalculations (year int PRIMARY KEY, co2predicted float, methanepredicted float, nopredicted float);")
    
     var myList = Array(2020,2021,2022,2023,2024,2025,2026,2027,2028,2029,2030,2031,2032,2033,2034,2035,2036,2037,2038,2039)
 
-    val largeRDD = sparkS.sparkContext.parallelize(forecast1.toArray)
+    val largeRDD = sparkS.sparkContext.parallelize(forecast.toArray)
 
     val smallRDD = sparkS.sparkContext.parallelize(myList)
 
@@ -95,8 +106,8 @@ object DataProcessing {
      val plot = Vegas("Co2 Emissions").withDataFrame(dffplot).
      mark(Line).
      encodeX("id", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
-     encodeY("vals", Quant, axis=Axis(title="Co2 Emission in Tons Per Person, Per Year")).
-     configCell(width=600, height=400)
+     encodeY("vals", Quant, axis = Axis(title="Co2 Emission in Tons Per Person, Per Year")).
+     configCell(width=700, height=500)
 
     combin.take(50).foreach(println)
 
@@ -104,9 +115,9 @@ object DataProcessing {
 
     combin.take(50).foreach(println)
 
-    println("Forecast of next 20 observations: " + forecast1.toArray.mkString(","))
+    println("Forecast of next 20 observations: " + forecast.toArray.mkString(","))
 
-    return plot.toJson
+    return plot1.toJson
   }
 
  
@@ -135,23 +146,35 @@ object DataProcessing {
 
     var agg = dar.map(x => (x._1, x._2/12)).sortBy(_._2)
 
-    // Ppm to Metric tons per cubic Kmtr
+    // Ppm to Kg per acre foot
     var calculation = agg.map(x =>( x._1, x._2 * 1.233))
 
+    // Kg per acre to Kg per sqkm conversion
     var oth = calculation.map(x =>( x._1, (x._2 * 1000000)/4047 ))
 
+    // Kg per sqkm to tons per sqkm
     var otherr = oth.map(x =>( x._1, x._2 / 1000 ))
 
+    //Tons per sqkm / population per sqkm
     var inacc = otherr.map(x =>( x._1, x._2 / 27.2 )).sortBy(_._2)
 
 
     inacc.saveToCassandra("environmental_calculations", "methane", SomeColumns("year", "tonnes"))
 
-
-
     var modific = inacc.filter(_._1 != 2020)
 
     modific.take(50).foreach(println)
+
+
+     val dffplot1 = sparkS.createDataFrame(modific).toDF("id", "vals")
+
+    dffplot1.printSchema();
+
+     val plot1 = Vegas("Methane Emissions").withDataFrame(dffplot1).
+     mark(Line).
+     encodeX("id", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
+     encodeY("vals", Quant, axis = Axis(title="Methane Emission in Tons Per Person, Per Year")).
+     configCell(width=700, height=500)
 
     val deom = modific.map(_._2.toDouble).collect.toArray
 
@@ -183,7 +206,7 @@ object DataProcessing {
      mark(Line).
      encodeX("id", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
      encodeY("vals", Quant, axis=Axis(title="Methane Emission in Tons Per Person, Per Year")).
-     configCell(width=600, height=400)
+     configCell(width=700, height=500)
 
     combin.take(50).foreach(println)
 
@@ -191,7 +214,7 @@ object DataProcessing {
 
     println("Forecast of next 20 observations: " + forecast1.toArray.mkString(","))
  
-    return plot.toJson
+    return plot1.toJson
 
   }
 
@@ -220,22 +243,33 @@ object DataProcessing {
 
     var agg = dar.map(x => (x._1, x._2/12)).sortBy(_._2)
 
-    // Ppm to Metric tons per cubic Kmtr
+   // Ppm to Kg per acre foot
     var calculation = agg.map(x =>( x._1, x._2 * 1.233))
 
+    // Kg per acre to Kg per sqkm conversion
     var oth = calculation.map(x =>( x._1, (x._2 * 1000000)/4047 ))
 
+    // Kg per sqkm to tons per sqkm
     var otherr = oth.map(x =>( x._1, x._2 / 1000 ))
 
+    //Tons per sqkm / population per sqkm
     var inacc = otherr.map(x =>( x._1, x._2 / 27.2 )).sortBy(_._2)
 
     inacc.saveToCassandra("environmental_calculations", "noemissions", SomeColumns("year", "tonnes"))
 
-
-   
     var modific = inacc.filter(_._1 != 2020)
 
     modific.take(50).foreach(println)
+
+      val dffplot1 = sparkS.createDataFrame(modific).toDF("id", "vals")
+
+      dffplot1.printSchema();
+
+     val plot1 = Vegas("NO Emissions").withDataFrame(dffplot1).
+     mark(Line).
+     encodeX("id", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
+     encodeY("vals", Quant, axis = Axis(title="NO Emission in Tons Per Person, Per Year")).
+     configCell(width=700, height=500)
 
     val deom = modific.map(_._2.toDouble).collect.toArray
 
@@ -267,7 +301,7 @@ object DataProcessing {
      mark(Line).
      encodeX("id", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
      encodeY("vals", Quant, axis=Axis(title="NO Emission in Tons Per Person, Per Year")).
-     configCell(width=600, height=400)
+     configCell(width=700, height=500)
 
     combin.take(50).foreach(println)
 
@@ -275,7 +309,7 @@ object DataProcessing {
 
     println("Forecast of next 20 observations: " + forecast1.toArray.mkString(","))
  
-    return plot.toJson
+    return plot1.toJson
 
   }
 
@@ -312,7 +346,7 @@ object DataProcessing {
      mark(Line).
      encodeX("year", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
      encodeY("area", Quant, axis=Axis(title="Area Remaining in Million Sqkm")).
-     configCell(width=600, height=400)
+     configCell(width=700, height=500)
 
     val sam2 = bat.rdd.map(x => (x(2) ,x(1) ))
 
@@ -361,7 +395,7 @@ object DataProcessing {
      mark(Line).
      encodeX("year", Quant, scale = Scale(zero = false), axis=Axis(title="Year") ).
      encodeY("area", Quant, axis=Axis(title="Arctic Summer Temperatures")).
-     configCell(width=600, height=400)
+     configCell(width=700, height=500)
 
     agg.saveToCassandra("environmental_calculations", "temperaturechanges", SomeColumns("year", "temperature"))
 
