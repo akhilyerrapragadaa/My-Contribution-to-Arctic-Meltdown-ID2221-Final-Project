@@ -117,7 +117,7 @@ object DataProcessing {
 
     println("Forecast of next 20 observations: " + forecast.toArray.mkString(","))
 
-    return plot1.toJson
+    return plot.toJson
   }
 
  
@@ -214,7 +214,7 @@ object DataProcessing {
 
     println("Forecast of next 20 observations: " + forecast1.toArray.mkString(","))
  
-    return plot1.toJson
+    return plot.toJson
 
   }
 
@@ -309,7 +309,7 @@ object DataProcessing {
 
     println("Forecast of next 20 observations: " + forecast1.toArray.mkString(","))
  
-    return plot1.toJson
+    return plot.toJson
 
   }
 
